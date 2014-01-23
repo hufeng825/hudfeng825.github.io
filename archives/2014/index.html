@@ -104,8 +104,6 @@ $(function () {
                 <span class="icon-bar"></span>
             </button>
             <a href="/" class="brand" >主页</a>
-            <a href="/Jianli.html" class="brand" >简历</a>
-
             <div class="nav-collapse collapse">
                 <p class="navbar-text pull-right">
                 </p>
@@ -143,7 +141,7 @@ $(function () {
                             </li>
                             
                             <li><a href="/tags/技术/"><i class="icon-book"></i> 技术
-                                <small>70</small>
+                                <small>72</small>
                             </a>
 
                             </li>
@@ -178,11 +176,86 @@ $(function () {
     <header>
         <!--div class="icon"></div-->
         <span class="badge badge-warning">
+        <time datetime="2014-01-21T14:21:56.000Z"><a href="/2014/01/21/ios37/" style="color:#FFFFFF">2014 1月 21</a></time>
+        </span>
+        
+
+<h1 class="title"><a href="/2014/01/21/ios37/">iOS系列教程之TextKit实现图文混排读后记</a></h1>
+
+
+
+    </header>
+    <div class="entry">
+        
+        <p>前两天看搜狐<a href="http://weibo.com/jiaming0329" target="_blank">家明哥</a>写的<a href="http://blog.sina.com.cn/s/blog_6f1a34260101ptox.html" target="_blank">《TextKit实现图文混排》</a> 今晚回家看了下API发现了一个更加取巧的实现方式.可以直接将后台返回的html富文本用textView显示出来.
+记得两年前当时做这个的时候还是借助了笨重的webview.</p>
+<blockquote>
+<p>&gt;
+Textkit是iOS7新推出的类库，其实是在之前推出的CoreText上的封装，有了这个TextKit，以后不用再拿着CoreText来做累活了，
+下面是我分别用UITextView 和UIWebView 显示一段图文混合的文字 </p>
+</blockquote>
+<img src="http://ww1.sinaimg.cn/mw690/a43af4ffjw1ecrjrol3fwg208o0esait.gif">
+
+
+<h2 id="-more-">
+        
+    </div>
+    <footer>
+        
+        <div class="alignleft">
+            <a href="/2014/01/21/ios37/#more" class="more-link">全文<div class="icon-eye-open"></div></a>
+        </div>
+        
+    </footer>
+</div>
+
+            
+            <div class="content">
+    <header>
+        <!--div class="icon"></div-->
+        <span class="badge badge-warning">
+        <time datetime="2014-01-20T16:10:03.000Z"><a href="/2014/01/21/ios36/" style="color:#FFFFFF">2014 1月 21</a></time>
+        </span>
+        
+
+<h1 class="title"><a href="/2014/01/21/ios36/">iOS系列教程之常见开发Tips</a></h1>
+
+
+
+    </header>
+    <div class="entry">
+        
+        <p>开发技巧和常见错误汇总,不定期更新中,也欢迎大家总结跟帖</p>
+<h2 id="1-arc-nsnotificationcenter-remove">1:ARC下NSNotificationCenter需要remove</h2>
+<figure class="highlight"><pre>- (<span class="keyword">void</span>) dealloc 
+{
+	<span class="comment">//  [super dealloc] 千万不要画蛇添足    </span>
+	[[<span class="built_in">NSNotificationCenter</span> defaultCenter] removeObserver:<span class="keyword">self</span>]; 
+}
+</pre></figure>
+
+<p>
+        
+    </div>
+    <footer>
+        
+        <div class="alignleft">
+            <a href="/2014/01/21/ios36/#more" class="more-link">全文<div class="icon-eye-open"></div></a>
+        </div>
+        
+    </footer>
+</div>
+
+            
+            <div class="content">
+    <header>
+        <!--div class="icon"></div-->
+        <span class="badge badge-warning">
         <time datetime="2014-01-13T13:44:58.000Z"><a href="/2014/01/13/ios35/" style="color:#FFFFFF">2014 1月 13</a></time>
         </span>
         
 
-<h1 class="title"><a href="/2014/01/13/ios35/">ios系列教程之用instruments来检验你的app</a></h1>
+<h1 class="title"><a href="/2014/01/13/ios35/">iOS系类教程之用instruments来检验你的app</a></h1>
 
 
 

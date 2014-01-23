@@ -4,7 +4,7 @@
   <subtitle><![CDATA[专注于移动互联网]]></subtitle>
   <link href="http://hufeng825.github.com/atom.xml" rel="self"/>
   <link href="http://hufeng825.github.com"/>
-  <updated>2014-01-14T05:40:05.389Z</updated>
+  <updated>2014-01-23T05:25:54.111Z</updated>
   <id>http://hufeng825.github.com/</id>
   <author>
     <name><![CDATA[Jason Hu]]></name>
@@ -12,11 +12,177 @@
   </author>
   <generator uri="http://zespia.tw/hexo">Hexo</generator>
   <entry>
-    <title type="html"><![CDATA[ios系列教程之用instruments来检验你的app]]></title>
+    <title type="html"><![CDATA[iOS系列教程之TextKit实现图文混排读后记]]></title>
+    <link href="http://hufeng825.github.com/2014/01/21/ios37/"/>
+    <id>http://hufeng825.github.com/2014/01/21/ios37/</id>
+    <published>2014-01-21T14:21:56.000Z</published>
+    <updated>2014-01-23T05:21:57.000Z</updated>
+    <content type="html"><![CDATA[<p>前两天看搜狐<a href="http://weibo.com/jiaming0329" target="_blank">家明哥</a>写的<a href="http://blog.sina.com.cn/s/blog_6f1a34260101ptox.html" target="_blank">《TextKit实现图文混排》</a> 今晚回家看了下API发现了一个更加取巧的实现方式.可以直接将后台返回的html富文本用textView显示出来.
+记得两年前当时做这个的时候还是借助了笨重的webview.</p>
+<blockquote>
+<p>&gt;
+Textkit是iOS7新推出的类库，其实是在之前推出的CoreText上的封装，有了这个TextKit，以后不用再拿着CoreText来做累活了，
+下面是我分别用UITextView 和UIWebView 显示一段图文混合的文字 </p>
+</blockquote>
+<img src="http://ww1.sinaimg.cn/mw690/a43af4ffjw1ecrjrol3fwg208o0esait.gif">
+
+
+<h2 id="-more-"><a id="more"></a></h2>
+<h2 id="api">API</h2>
+<figure class="highlight"><pre><span class="pp">- <span class="params">(id)</span>initWithFileURL:<span class="params">(<span class="variable">NSURL</span> *)</span>url options:<span class="params">(<span class="variable">NSDictionary</span> *)</span>options documentAttributes:<span class="params">(<span class="variable">NSDictionary</span> **)</span>dict error:<span class="params">(<span class="variable">NSError</span> **)</span>error</span>
+</pre></figure>
+
+<hr>
+<h2 id="description">Description</h2>
+<p>Initializes a new attributed string object from the data at the given URL.
+The HTML importer should not be called from a background thread (that is, the options dictionary includes NSDocumentTypeDocumentAttribute with a value of NSHTMLTextDocumentType). It will try to synchronize with the main thread, fail, and time out. Calling it from the main thread works (but can still time out if the HTML contains references to external resources, which should be avoided at all costs). The HTML import mechanism is meant for implementing something like markdown (that is, text styles, colors, and so on), not for general HTML import.</p>
+<hr>
+<h2 id="-html">测试用的html</h2>
+<figure class="highlight"><pre><span class="tag">&lt;<span class="title">meta</span> <span class="attribute">charset</span>=<span class="value">"UTF-8"</span>&gt;</span>
+<span class="tag">&lt;<span class="title">div</span> <span class="attribute">style</span>=<span class="value">"background-color:lightgrey;
+    font-size:14px;
+    color:#304182;
+  text-align:center; 
+  margin-left:5px;
+  padding-right:5px"</span>&gt;</span>
+	<span class="tag">&lt;<span class="title">p</span>&gt;</span>Hi
+		<span class="tag">&lt;<span class="title">span</span> <span class="attribute">style</span>=<span class="value">"font-size:18px; color:#E88834;"</span>&gt;</span>
+			Taobao
+		<span class="tag">&lt;/<span class="title">span</span>&gt;</span>
+        
+		<span class="tag">&lt;<span class="title">img</span> <span class="attribute">src</span>=<span class="value">"hufeng.png"</span> <span class="attribute">height</span>=<span class="value">"32"</span> <span class="attribute">width</span>=<span class="value">"32"</span> /&gt;</span>
+        <span class="tag">&lt;<span class="title">p</span>&gt;</span> 静态图片
+		<span class="tag">&lt;<span class="title">img</span> <span class="attribute">src</span>=<span class="value">"taobao.gif"</span> <span class="attribute">height</span>=<span class="value">"32"</span> <span class="attribute">width</span>=<span class="value">"52"</span>&gt;</span>
+        <span class="tag">&lt;<span class="title">p</span>&gt;</span> 动态图片
+	<span class="tag">&lt;/<span class="title">p</span>&gt;</span>
+	 
+<span class="tag">&lt;/<span class="title">div</span>&gt;</span>
+</pre></figure>
+
+<ul>
+<li><strong>需要注意的是第一行需要指明编码格式  否则的话 中文会显示乱码</strong></li>
+<li><strong>gif图片textView会自动转换成静态图片进行显示</strong></li>
+</ul>
+<p>如下图是去掉meta charset=&quot;UTF-8&quot;的显示效果</p>
+<img src="http://ww1.sinaimg.cn/mw690/a43af4ffjw1ecrjvxjcelj207m054glk.jpg">
+
+
+
+<h2 id="-">功能函数</h2>
+<figure class="highlight"><pre>- (void)loadHtmlToWebView
+{
+    NSURL *url = <span class="string">[[NSBundle mainBundle] URLForResource:@"text" withExtension:@"html"];
+    [_webView loadRequest:[NSURLRequest requestWithURL:url]]</span>;
+}
+</pre></figure>
+
+<figure class="highlight"><pre>- (<span class="keyword">void</span>)loadHtmlToTextView
+{
+    
+    <span class="comment">// Create attributed string from HTML</span>
+    <span class="built_in">NSURL</span> *url = [[<span class="built_in">NSBundle</span> mainBundle] URLForResource:@<span class="string">"text"</span> withExtension:@<span class="string">"html"</span>];
+    NSAttributedString *attrStr = [[NSAttributedString alloc]
+                                   initWithFileURL:url
+                                   options:@{NSDocumentTypeDocumentAttribute:NSHTMLTextDocumentType}
+                                   documentAttributes:<span class="literal">nil</span> error:<span class="literal">nil</span>];
+    [_textView setAttributedText:attrStr];
+
+}
+</pre></figure>
+
+<p>演示代码下载
+<a href="http://vdisk.weibo.com/s/aOcPgYpXA04g2" target="_blank">http://vdisk.weibo.com/s/aOcPgYpXA04g2</a>  </p>
+]]></content>
+    <category scheme="http://hufeng825.github.com/tags/技术/" term="技术"/>
+    <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
+  </entry>
+  <entry>
+    <title type="html"><![CDATA[iOS系列教程之常见开发Tips]]></title>
+    <link href="http://hufeng825.github.com/2014/01/21/ios36/"/>
+    <id>http://hufeng825.github.com/2014/01/21/ios36/</id>
+    <published>2014-01-20T16:10:03.000Z</published>
+    <updated>2014-01-23T05:21:57.000Z</updated>
+    <content type="html"><![CDATA[<p>开发技巧和常见错误汇总,不定期更新中,也欢迎大家总结跟帖</p>
+<h2 id="1-arc-nsnotificationcenter-remove">1:ARC下NSNotificationCenter需要remove</h2>
+<figure class="highlight"><pre>- (<span class="keyword">void</span>) dealloc 
+{
+	<span class="comment">//  [super dealloc] 千万不要画蛇添足    </span>
+	[[<span class="built_in">NSNotificationCenter</span> defaultCenter] removeObserver:<span class="keyword">self</span>]; 
+}
+</pre></figure>
+
+<p><a id="more"></a></p>
+<h2 id="2-const-or-define">2:const or #define</h2>
+<p>下面是大家常见的两种定义优先选择第二种</p>
+<figure class="highlight"><pre> <span class="preprocessor">#<span class="keyword">define</span> PI 3.14159  //只预处理时进行符号替换,不推荐</span>
+ <span class="keyword">const</span> doulbe Pi=<span class="number">3.14159</span> <span class="comment">//安全性高,和效率上推荐</span>
+</pre></figure>
+
+<h2 id="3-">3:常量字符串声明</h2>
+<p>Foo.h</p>
+<figure class="highlight"><pre><span class="keyword">extern</span> <span class="built_in">NSString</span> *constXXFooDidBarNotification;
+</pre></figure>
+
+<p>Foo.m</p>
+<figure class="highlight"><pre><span class="built_in">NSString</span> *<span class="keyword">const</span> XXFooDidBarNotification =@<span class="string">"XXFooDidBarNotification”;</span>
+</pre></figure>
+
+<p>上面是引用的是 <a href="http://nshipster.com/nsnotification-and-nsnotificationcenter/中的一段声明" target="_blank">http://nshipster.com/nsnotification-and-nsnotificationcenter/中的一段声明</a></p>
+<p>有些童鞋不太理解const 修饰的用法 尝尝写成</p>
+<figure class="highlight"><pre><span class="attribute">constNSString *XXFooDidBarNotification </span>=<span class="string">@"XXFooDidBarNotification”;</span>
+</pre></figure>
+
+<p>详情可以参看 :<a href="http://walkingsmarts.com/correct-way-of-defining-constants-in-objective-c/" target="_blank">http://walkingsmarts.com/correct-way-of-defining-constants-in-objective-c/</a> </p>
+<h2 id="4-nstimer-invalidate-">4:NSTimer invalidate 错误</h2>
+<p>之前一直用NSTimer ,这两天再做性能优化的时候 发现了问题,用到NSTimer的ViewControll 一直没有释放. 后来跟踪发现了问题.</p>
+<figure class="highlight"><pre>[scheduledTimerWithTimeInterval <span class="symbol">:target</span><span class="symbol">:selector</span><span class="symbol">:userInfo</span><span class="symbol">:repeats</span><span class="symbol">:</span>]
+</pre></figure>
+
+<p> 当target 为self (VC)的时候  因为Timer 强引用了self, 
+所以当你的</p>
+<figure class="highlight"><pre>[ timer invalidate ]
+</pre></figure>
+
+<p>写到 dealloc 的时候  是永远无法释放当前VC的</p>
+<h2 id="5-nstimer-">5:NSTimer并不是一个高精度的定时器</h2>
+<p>苹果官方文档已经给出了</p>
+<blockquote>
+<p>&gt;
+A timer is not a real-time mechanism; it fires only when one of the run loop modes to which the timer has been added is running and able to check if the timer’s firing time has passed. Because of the various input sources a typical run loop manages, the effective resolution of the time interval for a timer is limited to on the order of 50-100 milliseconds. If a timer’s firing time occurs during a long callout or while the run loop is in a mode that is not monitoring the timer, the timer does not fire until the next time the run loop checks the timer. Therefore, the actual time at which the timer fires potentially can be a significant period of time after the scheduled firing time.</p>
+</blockquote>
+<p>所以当你需要高精度的定时器的时候 请用<strong>dispatch_after </strong>进行替换吧</p>
+<h2 id="6-">6:调试的技巧</h2>
+<p>有没有用过下面的log输出呢尝试下吧</p>
+<figure class="highlight"><pre>-(void) buttonPressed :(UIButton *)button
+{ 
+  NSLog(@<span class="string">"Stack trace: %@"</span>, [NSThread callStackSymbols]);
+  NSLog(@<span class="string">"Current selector: %@"</span>, NSStringFromSelector(_cmd));  
+  NSLog(@<span class="string">"Object class: %@"</span>, NSStringFromClass([self class])); 
+  NSLog(@<span class="string">"Filename: %@"</span>, [[NSString stringWithUTF8String:__FILE__] lastPathComponent]); 
+  <span class="keyword">...</span> 
+}
+</pre></figure>
+
+<h2 id="7-">7:注释技巧</h2>
+<ul>
+<li>在代码中加注释时，如果以 // TODO: 或 // FIXME: 或者 // !!!: 或 // ???: 开头的话，此注释会出现在方法的下列列表里，方便日后跟踪。</li>
+<li>利用Xcode4中的自定义代码片段，可以用一个快捷键插入一个预先定义好的注释片段</li>
+</ul>
+<h2 id="8-">8:改变模拟器窗口的大小</h2>
+<p>   在分辨率比较低的时候，iPad和iPhone模拟器会自动缩小，如果希望保持原始大小，可以修改 /Developer/Platforms/iPhoneSimulator.platform/Developer/Application/iOS Simulator/Contents/Info.plist，添加一个Application UI Presentaion Mode，设成All surpressed，则运行模拟器时自动隐藏菜单条和dock。在此目录下的 Resources/Devices/iPad.deviceinfo/Info.plist 中的chromeImageFile，把值设成空，可以去掉模拟器的边框。</p>
+<h2 id="9-enum-or-ns_enum">9:enum or NS_ENUM</h2>
+<p>这是昨天晚上在slack内讨论的话题有必要加进来正好之前唐巧微博分享过的有兴趣的可以去
+<a href="https://github.com/raywenderlich/objective-c-style-guide" target="_blank">https://github.com/raywenderlich/objective-c-style-guide</a></p>
+]]></content>
+    <category scheme="http://hufeng825.github.com/tags/技术/" term="技术"/>
+    <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
+  </entry>
+  <entry>
+    <title type="html"><![CDATA[iOS系类教程之用instruments来检验你的app]]></title>
     <link href="http://hufeng825.github.com/2014/01/13/ios35/"/>
     <id>http://hufeng825.github.com/2014/01/13/ios35/</id>
     <published>2014-01-13T13:44:58.000Z</published>
-    <updated>2014-01-14T05:35:10.000Z</updated>
+    <updated>2014-01-23T05:21:57.000Z</updated>
     <content type="html"><![CDATA[<blockquote>
 <p>比较了好多关于instruments 还是发现老外写的比较牛逼.于是果断翻译过来.有能力的的可以去看英文原版,鼓励大家看原版资料远离二手教程
 <a href="http://www.raywenderlich.com/23037/how-to-use-instruments-in-xcode" target="_blank">http://www.raywenderlich.com/23037/how-to-use-instruments-in-xcode</a></p>
@@ -35,14 +201,14 @@
 <p>天下武功，唯快不破。很多公司都信奉这个教条.恨不得把app压法周期压缩到最低,这就导致了开发中隐藏了很多问题,有点经验的工程师草率的优化下,更糟的情况那些没有经验的工程师甚至不会对app进行任何优化.</p>
 <p>某种程度上来说,你开发过程中是可以忽略性能优化的. 十年前,移动设备的硬件资源是非常有限的.甚至连浮点数都是被禁止的.因为浮点数能导致代码变大计算的速度变慢.
 科技发展如此迅速的今天,硬件很大程度上可以弥补软件的短板.现在的移动设备3D硬件处理的效率甚至媲美于PC机了,但是你不能总依赖于硬件和处理器速度来掩饰你APP做的多垃圾吧.(如果安卓系统跑在Iphone上还能够像IOS一样顺滑吗?,其实是一个道理的)</p>
-<p>性能这个概念很抽象,所以我们必须借助数据化图形化的输出方式.你可能花一周的时间去优化一个有趣的算法,但是这算法只占总执行时间的0.5%,不管你花多少精力去优化它,没人会注意到.相反一个for循环花费了90%的时间,你稍微修改下就能提高10%的效率,就是这个简单的修改可以得到大家很大的好感.因为.他们运行app时的第一感受就是比之前快了很多.没人会care你修改的是一个多牛逼的算法,还是一个简单的for循环.
+<p>性能这个概念很抽线,所以我们必须借助数据化图形化的输出方式.你可能花一周的时间去优化一个有趣的算法,但是这算法只占总执行时间的0.5%,不管你花多少精力去优化它,没人会注意到.相反一个for循环花费了90%的时间,你稍微修改下就能提高10%的效率,就是这个简单的修改可以得到大家很大的好感.因为.他们运行app时的第一感受就是比之前快了很多.没人会care你修改的是一个多牛逼的算法,还是一个简单的for循环.
 这个说明了什么.
 与其花费时间在优化小细节上不如多点时间找到你改优化的地方.</p>
 <p>下面引出第一个工具 &quot;时间事件查看器&quot;(自己杜撰的名字英文--Time Profiler),------他可以测量时间的间隔,中断程序执行,跟踪每个线程的堆栈.你可以想象下是xcode调试时按下暂停时的画面  </p>
 <img src="http://ww2.sinaimg.cn/mw690/a43af4ffjw1ecibl3evcoj207c0g7wfl.jpg" class="center">
 
 
-<p>比如,100个样本都在做1毫秒的间隔,然后在某个方法堆栈顶部同时压入了10样本,你可以推算出大概的时间有10%个10毫秒花费在此方法中,这是一个近似值.</p>
+<p>比如,100个样本都在做1毫秒的间隔,然后在某个方法堆栈顶部有10个样本,你可以推算出大概的时间有10%个10毫秒花费在此方法中,这是一个近似值.</p>
 <p>废话少说,时间是个检测到的.
 从xcode的菜单选择Product-Profile,或者选择⌘I,<img src="http://ww1.sinaimg.cn/mw690/a43af4ffjw1ecic1kiax3j205v02nq2x.jpg">
 程序会启动Instruments,这时候你会看到一个选择窗口  </p>
@@ -1076,11 +1242,11 @@ RACSignal *switched = [signalOfSignals switchToLatest];
     <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
   </entry>
   <entry>
-    <title type="html"><![CDATA[IOS 开发之 CocoaPods讲解]]></title>
+    <title type="html"><![CDATA[iOS 开发之 CocoaPods讲解]]></title>
     <link href="http://hufeng825.github.com/2013/10/11/ios30/"/>
     <id>http://hufeng825.github.com/2013/10/11/ios30/</id>
     <published>2013-10-10T16:53:01.000Z</published>
-    <updated>2013-10-10T17:28:45.000Z</updated>
+    <updated>2014-01-23T05:21:57.000Z</updated>
     <content type="html"><![CDATA[<h2 id="-cocoapods-">什么是CocoaPods?</h2>
 <p>看看你的项目吧,肯定会用到很多第三方的开源库,比如ASI,SBJson,MBProgressHUD等等.
 <a id="more"></a></p>
@@ -1172,11 +1338,11 @@ Integrating client project
     <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
   </entry>
   <entry>
-    <title type="html"><![CDATA[ios开发之你真的了解了KVC吗？]]></title>
+    <title type="html"><![CDATA[iOS开发之你真的了解了KVC吗？]]></title>
     <link href="http://hufeng825.github.com/2013/09/23/ios33/"/>
     <id>http://hufeng825.github.com/2013/09/23/ios33/</id>
     <published>2013-09-23T10:51:01.000Z</published>
-    <updated>2014-01-14T03:23:37.000Z</updated>
+    <updated>2014-01-23T05:21:57.000Z</updated>
     <content type="html"><![CDATA[<blockquote>
 <p>之前一直以为自己了解KVC 其实只是井底之蛙啦，真正的要把KVC原原本本的说出来还真的不是一件简单的事情。于是今天写下这边文章，告诫自己要知其然还要知其所以然。
 <a id="more"></a></p>
@@ -1289,11 +1455,11 @@ if ([p validateValue:&amp;name forKey:@&quot;name&quot; error:&amp;error]) {
     <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
   </entry>
   <entry>
-    <title type="html"><![CDATA[ios7之Sprite Kit vs Cocos2D]]></title>
+    <title type="html"><![CDATA[iOS7之Sprite Kit vs Cocos2D]]></title>
     <link href="http://hufeng825.github.com/2013/09/22/ios29/"/>
     <id>http://hufeng825.github.com/2013/09/22/ios29/</id>
     <published>2013-09-22T11:50:03.000Z</published>
-    <updated>2013-09-22T15:01:50.000Z</updated>
+    <updated>2014-01-23T05:21:57.000Z</updated>
     <content type="html"><![CDATA[<blockquote>
 <p>Xcode5正式版发布了，全新的ui当然带来了全新的功能。今天阿峰就给大家来介绍下Sprite Kit。</p>
 </blockquote>
@@ -1652,11 +1818,11 @@ smokeTrail.position = CGPointMake(CGRectGetMidX(self.frame)+40,CGRectGetMidY(sel
     <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
   </entry>
   <entry>
-    <title type="html"><![CDATA[ios开发之MPNowPlayingInfoCenter 锁屏显示正在播放的音乐]]></title>
+    <title type="html"><![CDATA[iOS开发之MPNowPlayingInfoCenter 锁屏显示正在播放的音乐]]></title>
     <link href="http://hufeng825.github.com/2013/09/18/ios28/"/>
     <id>http://hufeng825.github.com/2013/09/18/ios28/</id>
     <published>2013-09-18T15:43:50.000Z</published>
-    <updated>2013-09-18T17:33:56.000Z</updated>
+    <updated>2014-01-23T05:21:57.000Z</updated>
     <content type="html"><![CDATA[<p>今天在床上玩唱吧,听着歌锁屏了,当点亮屏幕的时候,锁屏页面出现了我正在听得歌曲 壁纸也换成了唱吧里面的歌手图片.做ios好几年了,从没有做过这个需求 于是好奇就翻看ios的<a href="https://developer.apple.com/library/ios/documentation/mediaplayer/reference/MPNowPlayingInfoCenter_Class/Reference/Reference.html" target="_blank">API文档</a>找到了这个类.
 <a id="more"></a>
 如下图</p>
@@ -1763,11 +1929,11 @@ else{
     <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
   </entry>
   <entry>
-    <title type="html"><![CDATA[阿里IOS面试题之多线程选用NSOperation or GCD]]></title>
+    <title type="html"><![CDATA[阿里iOS面试题之多线程选用NSOperation or GCD]]></title>
     <link href="http://hufeng825.github.com/2013/09/18/ios26/"/>
     <id>http://hufeng825.github.com/2013/09/18/ios26/</id>
     <published>2013-09-18T05:31:04.000Z</published>
-    <updated>2013-09-18T06:32:31.000Z</updated>
+    <updated>2014-01-23T05:21:57.000Z</updated>
     <content type="html"><![CDATA[<p>今天早上接到了阿里从杭州打过来的电话面试.虽然近期面试了一些大中型的互联网企业,但是跟素有&quot;IT界的黄浦军校&quot;的阿里面试官接触还是不免紧张.
 <a id="more"></a>
 面试持续了三四十分钟吧,期间我手机信号不好挂断了一次,大部分问题都是更加简历上的项目经验而来的,个人感觉问的不算太难但是却很深入,很明显不是能够背几道面试题能够搞定的.而且每个题基本上都跟优化设计和性能相关.</p>
@@ -2552,204 +2718,5 @@ myBlock();
 ]]></content>
     <category scheme="http://hufeng825.github.com/tags/技术/" term="技术"/>
     <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
-  </entry>
-  <entry>
-    <title type="html"><![CDATA[How to get the color of a pixel in an UIView?]]></title>
-    <link href="http://hufeng825.github.com/2013/09/03/22/"/>
-    <id>http://hufeng825.github.com/2013/09/03/22/</id>
-    <published>2013-09-03T08:33:35.000Z</published>
-    <updated>2013-09-15T05:04:07.000Z</updated>
-    <content type="html"><![CDATA[<p>记得一年前做招行掌上生活M+的时候 其中有个需求是画一画功能，就是在地图上用手指画个圈 然后得到这个圈里面所有指定商户。
-当时为了精度 除了利用 </p>
-<figure class="highlight"><pre><span class="built_in">BOOL</span> mapCoordinateIsInPolygon = CGPathContainsPoint(polygonView<span class="variable">.path</span>, <span class="literal">NULL</span>, polygonViewPoint, <span class="literal">NO</span>);
-</pre></figure>
-
-<p>来验证此点是否在画的区域内 同时为了精度 还用到了点位的颜色色值进行校验。</p>
-<p>无法把全部代码给出 下面把 如何得到uiview 某点的函数给出</p>
-<p> UIView+ColorOfPoint.h</p>
-<figure class="highlight"><pre><span class="class"><span class="keyword">@interface</span> <span class="title">UIView</span> (<span class="title">ColorOfPoint</span>)</span>
-- (<span class="built_in">UIColor</span> *) colorOfPoint:(<span class="built_in">CGPoint</span>)point;
-<span class="keyword">@end</span>
-</pre></figure>
-
-<p> UIView+ColorOfPoint.m</p>
-<figure class="highlight"><pre><span class="preprocessor">#import <span class="title">"UIView+ColorOfPoint.h"</span></span>
-<span class="preprocessor">#import <span class="title">&lt;QuartzCore/QuartzCore.h&gt;</span></span>
-
-<span class="class"><span class="keyword">@implementation</span> <span class="title">UIView</span> (<span class="title">ColorOfPoint</span>)</span>
-
-- (<span class="built_in">UIColor</span> *) colorOfPoint:(<span class="built_in">CGPoint</span>)point
-{
-    <span class="keyword">unsigned</span> <span class="keyword">char</span> pixel[<span class="number">4</span>] = {<span class="number">0</span>};
-    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
-    CGContextRef context = CGBitmapContextCreate(pixel, <span class="number">1</span>, <span class="number">1</span>, <span class="number">8</span>, <span class="number">4</span>, colorSpace, kCGImageAlphaPremultipliedLast);
-
-    CGContextTranslateCTM(context, -point<span class="variable">.x</span>, -point<span class="variable">.y</span>);
-
-    [<span class="keyword">self</span><span class="variable">.layer</span> renderInContext:context];
-
-    CGContextRelease(context);
-    CGColorSpaceRelease(colorSpace);
-
-    <span class="comment">//NSLog(@"pixel: %d %d %d %d", pixel[0], pixel[1], pixel[2], pixel[3]);</span>
-
-    <span class="built_in">UIColor</span> *color = [<span class="built_in">UIColor</span> colorWithRed:pixel[<span class="number">0</span>]/<span class="number">255.0</span> green:pixel[<span class="number">1</span>]/<span class="number">255.0</span> blue:pixel[<span class="number">2</span>]/<span class="number">255.0</span> alpha:pixel[<span class="number">3</span>]/<span class="number">255.0</span>];
-
-    <span class="keyword">return</span> color;
-}
-</pre></figure>
-
-<p>@end</p>
-<img src="http://ww2.sinaimg.cn/mw690/a43af4ffjw1e89eyhiwqbj20hs0qo769.jpg" class="center" width="300" height="600" title="模拟器">
-
-]]></content>
-    <category scheme="http://hufeng825.github.com/tags/技术/" term="技术"/>
-    <category scheme="http://hufeng825.github.com/categories/ios/" term="ios"/>
-  </entry>
-  <entry>
-    <title type="html"><![CDATA[svn命令总结]]></title>
-    <link href="http://hufeng825.github.com/2013/09/03/svn9/"/>
-    <id>http://hufeng825.github.com/2013/09/03/svn9/</id>
-    <published>2013-09-03T06:08:30.000Z</published>
-    <updated>2013-09-15T05:04:07.000Z</updated>
-    <content type="html"><![CDATA[<h2 id="1-">1. 创建分支</h2>
-<p>svn cp <a href="http://svn.trunk/" target="_blank">http://svn.trunk/</a> <a href="http://svn.branches/" target="_blank">http://svn.branches/</a>  –m “create a branch”
-<a id="more"></a></p>
-<h2 id="2-">2. 合并分支</h2>
-<h3 id="1-branch-trunk-">1、在某个branch里合并trunk上的修改，</h3>
-<p>进入分支目录，然后执行：</p>
-<figure class="highlight"><pre>svn <span class="built_in">merge</span> <span class="keyword">http</span>://svn/repo/trunk
-</pre></figure>
-
-<h3 id="2-trunk-branch-">2、在trunk上合并branch的修改。</h3>
-<p>进入trunk目录，然后执行</p>
-<figure class="highlight"><pre>svn merge --reintegrate <span class="symbol">http:</span>/<span class="regexp">/svn/repo</span><span class="regexp">/branches/branch</span>1
-</pre></figure>
-
-<h2 id="3-checkout-">3. 将文件checkout到本地目录</h2>
-<p>svn checkout path（path是服务器上的目录）</p>
-<figure class="highlight"><pre>例如：svn checkout svn:<span class="comment">//192.168.1.1/pro/domain</span>
-简写：svn co
-</pre></figure>
-
-<h2 id="4-">4. 往版本库中添加新的文件</h2>
-<p>svn add file</p>
-<figure class="highlight"><pre>例如：svn addtest<span class="preprocessor">.php</span>(添加test<span class="preprocessor">.php</span>)
-svn <span class="keyword">add</span> *<span class="preprocessor">.php</span>(添加当前目录下所有的php文件)
-</pre></figure>
-
-<h2 id="5-">5. 将改动的文件提交到版本库</h2>
-<p>svn commit -m “LogMessage“ [-N] [--no-unlock] PATH(如果选择了保持锁，就使用–no-unlock开关)</p>
-<figure class="highlight"><pre>例如：svn <span class="operator"><span class="keyword">commit</span> -m “<span class="keyword">add</span> test file <span class="keyword">for</span> my test“ test.php
-简写：svn ci</span>
-</pre></figure>
-
-<h2 id="6-">6. 加锁/解锁</h2>
-<p>svn lock -m “LockMessage“ [--force] PATH</p>
-<figure class="highlight"><pre>例如：svn <span class="keyword">lock</span> -m “<span class="keyword">lock</span> test file“ test.php
-svn unlock PATH
-</pre></figure>
-
-<h2 id="7-">7. 更新到某个版本</h2>
-<p>svn update -r m path</p>
-<p>例如：</p>
-<figure class="highlight"><pre>svn <span class="operator"><span class="keyword">update</span>如果后面没有目录，默认将当前目录以及子目录下的所有文件都更新到最新版本。
-svn <span class="keyword">update</span> -r <span class="number">200</span> test.php(将版本库中的文件test.php还原到版本<span class="number">200</span>)
-svn <span class="keyword">update</span> test.php(更新，于版本库同步。如果在提交的时候提示过期的话，是因为冲突，需要先<span class="keyword">update</span>，修改文件，然后清除svn resolved，最后再提交<span class="keyword">commit</span>)</span>
-</pre></figure>
-
-<p>简写：svn up</p>
-<h2 id="8-">8.查看文件或者目录状态</h2>
-<ol>
-<li>svn status path（目录下的文件和子目录的状态，正常状态不显示）</li>
-</ol>
-<p>【?：不在svn的控制中；M：内容被修改；C：发生冲突；A：预定加入到版本库；K：被锁定】</p>
-<ol>
-<li>svn status -v path(显示文件和子目录状态)
-第一列保持相同，第二列显示工作版本号，第三和第四列显示最后一次修改的版本号和修改人。<br><strong>注：</strong> svn status、svn diff和 svn revert这三条命令在没有网络的情况下也可以执行的，原因是svn在本地的.svn中保留了本地版本的原始拷贝。
-简写：svn st</li>
-</ol>
-<h2 id="9-">9.删除文件</h2>
-<p>svn delete path -m “delete test fle“</p>
-<p>例如：</p>
-<figure class="highlight"><pre>svn <span class="built_in">delete</span> svn://<span class="number">192.168</span><span class="number">.1</span><span class="number">.1</span>/pro/domain/test.php -m “<span class="built_in">delete</span> test <span class="built_in">file</span>”
-或者直接svn <span class="built_in">delete</span> test.php 然后再svn ci -m ‘<span class="built_in">delete</span> test <span class="built_in">file</span>‘，
-</pre></figure>
-
-<p>推荐使用这种简写：svn (del, remove, rm)</p>
-<h2 id="10-">10.查看日志</h2>
-<p>svn log path
-例如：</p>
-<figure class="highlight"><pre>svn <span class="keyword">log</span> test.php 显示这个文件的所有修改记录，及其版本号的变化
-</pre></figure>
-
-<h2 id="11-">11.查看文件详细信息</h2>
-<p>svn info path</p>
-<p>例如：</p>
-<figure class="highlight"><pre>svn info test<span class="preprocessor">.php</span>
-</pre></figure>
-
-<h2 id="12-">12.比较差异</h2>
-<p>svn diff path(将修改的文件与基础版本比较)</p>
-<p>例如：</p>
-<figure class="highlight"><pre>svn diff test<span class="preprocessor">.php</span>
-</pre></figure>
-
-<p>svn diff -r m:n path(对版本m和版本n比较差异)</p>
-<p>例如：</p>
-<figure class="highlight"><pre><span class="tag">svn</span> <span class="tag">diff</span> <span class="tag">-r</span> 200<span class="pseudo">:201</span> <span class="tag">test</span><span class="class">.php</span>
-</pre></figure>
-
-<p>简写：svn di</p>
-<h2 id="13-">13.将两个版本之间的差异合并到当前文件</h2>
-<p>svn merge -r m:n path
-例如：</p>
-<figure class="highlight"><pre><span class="tag">svn</span> <span class="tag">merge</span> <span class="tag">-r</span> 200<span class="pseudo">:205</span> <span class="tag">test</span><span class="class">.php</span>（将版本200与205之间的差异合并到当前文件，但是一般都会产生冲突，需要处理一下）
-</pre></figure>
-
-<h2 id="14-svn-">14.SVN 帮助</h2>
-<p>svn help<br>svn help ci  </p>
-<h2 id="15-">15.版本库下的文件和目录列表</h2>
-<p>svn list path
-显示path目录下的所有属于版本库的文件和目录<br>简写：svn ls</p>
-<h2 id="16-">16.创建纳入版本控制下的新目录</h2>
-<p>svn mkdir: 创建纳入版本控制下的新目录。</p>
-<p>用法: </p>
-<ol>
-<li>mkdir PATH…</li>
-<li>mkdir URL…</li>
-</ol>
-<p>创建版本控制的目录。</p>
-<ol>
-<li>每一个以工作副本 PATH 指定的目录，都会创建在本地端，并且加入新增调度，以待下一次的提交。</li>
-<li>每个以URL指定的目录，都会透过立即提交于仓库中创建。在这两个情况下，所有的中间目录都必须事先存在。</li>
-</ol>
-<h2 id="17-">17.恢复本地修改</h2>
-<p>svn revert: 恢复原始未改变的工作副本文件 (恢复大部份的本地修改)。revert:<br>用法: revert PATH…<br>注意: 本子命令不会存取网络，并且会解除冲突的状况。但是它不会恢复被删除的目录</p>
-<h2 id="18-url-">18.代码库URL变更</h2>
-<p>svn switch (sw): 更新工作副本至不同的URL。</p>
-<p>用法: </p>
-<ol>
-<li>switch URL [PATH]</li>
-<li><p>switch –relocate FROM TO [PATH...]</p>
-<ul>
-<li><p>更新你的工作副本，映射到一个新的URL，其行为跟“svn update”很像，也会将服务器上文件与本地文件合并。这是将工作副本对应到同一仓库中某个分支或者标记的方法。</p>
-</li>
-<li><p>改写工作副本的URL元数据，以反映单纯的URL上的改变。当仓库的根URL变动(比如方案名或是主机名称变动)，但是工作副本仍旧对映到同一仓库的同一目录时使用这个命令更新工作副本与仓库的对应关系。</p>
-</li>
-</ul>
-</li>
-</ol>
-<h2 id="19-">19.解决冲突</h2>
-<p>svn resolved: 移除工作副本的目录或文件的“冲突”状态。 </p>
-<p>用法: resolved PATH…</p>
-<p><strong>注意:</strong> 本子命令不会依语法来解决冲突或是移除冲突标记；它只是移除冲突的
-相关文件，然后让 PATH 可以再次提交。</p>
-<h2 id="20-url-">20.输出指定文件或URL的内容。</h2>
-<p>svn cat 目标[@版本]…如果指定了版本，将从指定的版本开始查找。  </p>
-<p>svn cat -r PREV filename &gt; filename (PREV 是上一版本,也可以写具体版本号,这样输出结果是可以提交的)  </p>
-]]></content>
-    <category scheme="http://hufeng825.github.com/tags/技术/" term="技术"/>
-    <category scheme="http://hufeng825.github.com/categories/svn/" term="svn"/>
   </entry>
 </feed>

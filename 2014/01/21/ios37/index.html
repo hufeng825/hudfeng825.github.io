@@ -4,10 +4,10 @@
     <link href="/favicon.ico" rel="icon">
     <meta charset="utf-8">
     
-    <title>复杂页面消退的一个简单实例 | 阿峰的技术窝窝</title>
+    <title>iOS系列教程之TextKit实现图文混排读后记 | 阿峰的技术窝窝</title>
     <meta name="author" content="Jason Hu">
     
-  <meta name="description" content="如图">
+  <meta name="description" content="前两天看搜狐家明哥写的《TextKit实现图文混排》 今晚回家看了下API发现了一个更加取巧的实现方式.可以直接将后台返回的html富文本用textView显示出来.记得两年前当时做这个的时候还是借助了笨重的webview.&gt;Textkit是iOS7新推出的类库，其实是在之前推出的CoreText上的封装，有了这个TextKit，以后不用再拿着CoreText来做累活了，下面是我分别用UITextView 和UIWebView 显示一段图文混合的文字">
   
   
   
@@ -16,7 +16,7 @@
     
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-    <meta property="og:title" content="复杂页面消退的一个简单实例"/>
+    <meta property="og:title" content="iOS系列教程之TextKit实现图文混排读后记"/>
     <meta property="og:site_name" content="阿峰的技术窝窝"/>
 
     
@@ -178,39 +178,95 @@ $(function () {
     <header class="page-header">
         
         <div class="icon"></div>
-        <time datetime="2013-08-31T14:42:52.000Z"><a href="/2013/08/31/ios13/">2013 8月 31</a></time>
+        <time datetime="2014-01-21T14:21:56.000Z"><a href="/2014/01/21/ios37/">2014 1月 21</a></time>
         
         
 
-<h1 class="title">复杂页面消退的一个简单实例</h1>
+<h1 class="title">iOS系列教程之TextKit实现图文混排读后记</h1>
 
 
 
     </header>
     <div class="entry" id="post">
-        <p>如图</p>
-<img src="http://ww3.sinaimg.cn/mw690/a43af4ffjw1e8680v5hirj20df09qglv.jpg" class="left" width="400" height="600">
+        <p>前两天看搜狐<a href="http://weibo.com/jiaming0329" target="_blank">家明哥</a>写的<a href="http://blog.sina.com.cn/s/blog_6f1a34260101ptox.html" target="_blank">《TextKit实现图文混排》</a> 今晚回家看了下API发现了一个更加取巧的实现方式.可以直接将后台返回的html富文本用textView显示出来.
+记得两年前当时做这个的时候还是借助了笨重的webview.</p>
+<blockquote>
+<p>&gt;
+Textkit是iOS7新推出的类库，其实是在之前推出的CoreText上的封装，有了这个TextKit，以后不用再拿着CoreText来做累活了，
+下面是我分别用UITextView 和UIWebView 显示一段图文混合的文字 </p>
+</blockquote>
+<img src="http://ww1.sinaimg.cn/mw690/a43af4ffjw1ecrjrol3fwg208o0esait.gif">
 
 
-<p><a id="more"></a>
-实现上面的这个又两种实现方式 </p>
-<ul>
-<li><p>一种是给页面1 发广播通知 </p>
-</li>
-<li><p>另外一种就是我要介绍的</p>
-</li>
-</ul>
-<figure class="highlight"><pre> [(<span class="built_in">UINavigationController</span>*)<span class="keyword">self</span><span class="variable">.parentViewController</span><span class="variable">.presentingViewController</span>
-
-     popToRootViewControllerAnimated:<span class="literal">YES</span>];
-
-    [<span class="keyword">self</span> dismissModalViewControllerAnimated:<span class="literal">YES</span>];
+<h2 id="-more-"><a id="more"></a></h2>
+<h2 id="api">API</h2>
+<figure class="highlight"><pre><span class="pp">- <span class="params">(id)</span>initWithFileURL:<span class="params">(<span class="variable">NSURL</span> *)</span>url options:<span class="params">(<span class="variable">NSDictionary</span> *)</span>options documentAttributes:<span class="params">(<span class="variable">NSDictionary</span> **)</span>dict error:<span class="params">(<span class="variable">NSError</span> **)</span>error</span>
 </pre></figure>
 
+<hr>
+<h2 id="description">Description</h2>
+<p>Initializes a new attributed string object from the data at the given URL.
+The HTML importer should not be called from a background thread (that is, the options dictionary includes NSDocumentTypeDocumentAttribute with a value of NSHTMLTextDocumentType). It will try to synchronize with the main thread, fail, and time out. Calling it from the main thread works (but can still time out if the HTML contains references to external resources, which should be avoided at all costs). The HTML import mechanism is meant for implementing something like markdown (that is, text styles, colors, and so on), not for general HTML import.</p>
+<hr>
+<h2 id="-html">测试用的html</h2>
+<figure class="highlight"><pre><span class="tag">&lt;<span class="title">meta</span> <span class="attribute">charset</span>=<span class="value">"UTF-8"</span>&gt;</span>
+<span class="tag">&lt;<span class="title">div</span> <span class="attribute">style</span>=<span class="value">"background-color:lightgrey;
+    font-size:14px;
+    color:#304182;
+  text-align:center; 
+  margin-left:5px;
+  padding-right:5px"</span>&gt;</span>
+	<span class="tag">&lt;<span class="title">p</span>&gt;</span>Hi
+		<span class="tag">&lt;<span class="title">span</span> <span class="attribute">style</span>=<span class="value">"font-size:18px; color:#E88834;"</span>&gt;</span>
+			Taobao
+		<span class="tag">&lt;/<span class="title">span</span>&gt;</span>
+        
+		<span class="tag">&lt;<span class="title">img</span> <span class="attribute">src</span>=<span class="value">"hufeng.png"</span> <span class="attribute">height</span>=<span class="value">"32"</span> <span class="attribute">width</span>=<span class="value">"32"</span> /&gt;</span>
+        <span class="tag">&lt;<span class="title">p</span>&gt;</span> 静态图片
+		<span class="tag">&lt;<span class="title">img</span> <span class="attribute">src</span>=<span class="value">"taobao.gif"</span> <span class="attribute">height</span>=<span class="value">"32"</span> <span class="attribute">width</span>=<span class="value">"52"</span>&gt;</span>
+        <span class="tag">&lt;<span class="title">p</span>&gt;</span> 动态图片
+	<span class="tag">&lt;/<span class="title">p</span>&gt;</span>
+	 
+<span class="tag">&lt;/<span class="title">div</span>&gt;</span>
+</pre></figure>
+
+<ul>
+<li><strong>需要注意的是第一行需要指明编码格式  否则的话 中文会显示乱码</strong></li>
+<li><strong>gif图片textView会自动转换成静态图片进行显示</strong></li>
+</ul>
+<p>如下图是去掉meta charset=&quot;UTF-8&quot;的显示效果</p>
+<img src="http://ww1.sinaimg.cn/mw690/a43af4ffjw1ecrjvxjcelj207m054glk.jpg">
+
+
+
+<h2 id="-">功能函数</h2>
+<figure class="highlight"><pre>- (void)loadHtmlToWebView
+{
+    NSURL *url = <span class="string">[[NSBundle mainBundle] URLForResource:@"text" withExtension:@"html"];
+    [_webView loadRequest:[NSURLRequest requestWithURL:url]]</span>;
+}
+</pre></figure>
+
+<figure class="highlight"><pre>- (<span class="keyword">void</span>)loadHtmlToTextView
+{
+    
+    <span class="comment">// Create attributed string from HTML</span>
+    <span class="built_in">NSURL</span> *url = [[<span class="built_in">NSBundle</span> mainBundle] URLForResource:@<span class="string">"text"</span> withExtension:@<span class="string">"html"</span>];
+    NSAttributedString *attrStr = [[NSAttributedString alloc]
+                                   initWithFileURL:url
+                                   options:@{NSDocumentTypeDocumentAttribute:NSHTMLTextDocumentType}
+                                   documentAttributes:<span class="literal">nil</span> error:<span class="literal">nil</span>];
+    [_textView setAttributedText:attrStr];
+
+}
+</pre></figure>
+
+<p>演示代码下载
+<a href="http://vdisk.weibo.com/s/aOcPgYpXA04g2" target="_blank">http://vdisk.weibo.com/s/aOcPgYpXA04g2</a>  </p>
 
         <hr />
         <span class="label label-warning">W</span>
-        本站文章如果没有特殊说明，均为原创，转载请以链接方式注明本文地址：<a href="http://hufeng825.github.com/2013/08/31/ios13/">http://hufeng825.github.com/2013/08/31/ios13/
+        本站文章如果没有特殊说明，均为原创，转载请以链接方式注明本文地址：<a href="http://hufeng825.github.com/2014/01/21/ios37/">http://hufeng825.github.com/2014/01/21/ios37/
          <hr />
         
   
